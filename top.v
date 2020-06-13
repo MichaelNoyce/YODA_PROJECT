@@ -71,27 +71,18 @@ module top(
     reg [7:0] dina=0; //We're not putting data in, so we can leave this unassigned
     wire [7:0] douta; //Port A data output (to read) //TODO width of BRAM_A
     reg reset = 1'b1;
-    
-    //BRAM_B contains the output .coe file
-    //Memory B IO
-    reg enb = 1; //Port B clock enable (enables read, write and reset)
-    reg web = 1; //Port B write enable
-    reg [7:0] addrb=0; //Port B address //TODO depth of BRAM_B 
-    reg [7:0] dinb=0; //result Y will be written back to BRAM_B
-    wire [7:0] doutb; //Port B data output (to read) //TODO width of BRAM_B
-    	
-	//instantiate BRAM_A    
+       	
+	//instantiate BRAM_A
+	//currently it has 256 samples stored    
     blk_mem_gen_0 new_BRAM (
     CLK100MHZ,    // input wire clka
     ena,      // input wire ena
     wea,      // input wire [0 : 0] wea
     addra,  // input wire [7 : 0] addra
-    dina,    // input wire [10 : 0] dina
-    douta  // output wire [10 : 0] douta
+    dina,    // input wire [7 : 0] dina
+    douta  // output wire [7 : 0] douta
     );
-    
-    //TODO instantiate BRAM_B	
-	
+    	
 	//TODO instantiate CORDIC Core
 	
 	//checksum variables
@@ -104,7 +95,6 @@ module top(
 	   AN<= SegmentDrivers;
 	   SEG<=SevenSegment;
 	   X_input <=douta; //read input byte from BRAM_A
-	   dinb <= Y_output; //write result to BRAM_B
 	   
 	   if(Start_event)begin
 	   //TODO start logic
