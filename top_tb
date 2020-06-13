@@ -1,0 +1,64 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 06/13/2020 02:07:53 PM
+// Design Name: 
+// Module Name: top_sim
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module top_tb();
+
+reg clk;
+reg BTNA;
+reg BTNB;
+wire [7:0] SEG;
+wire [3:0] AN;
+wire [0:0] s_axis_phase_input;
+wire [7:0] s_axis_phase_tdata_input;
+wire [31:0] Y_output;
+
+top top_sim(
+    .CLK100MHZ(clk),
+    .BTNA(BTNA),
+    .BTNB(BTNB),
+    .SEG(SEG),
+    .AN(AN),
+    .s_axis_phase_input(s_axis_phase_input),
+    .s_axis_phase_tdata_input(s_axis_phase_tdata_input),
+    .Y_output(Y_output)
+    );
+
+initial begin
+
+//Reset test
+clk=0;
+
+#10; //one clock cycle
+BTNA = 1'b0;
+#100;
+BTNB = 1'b0;
+#10000000 //just let it run for a bit
+
+$finish;
+
+end
+
+always begin
+    #10 clk = ~clk; //100x10^6 Hz clock
+end
+
+endmodule

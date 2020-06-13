@@ -7,7 +7,10 @@ module top(
     input BTNB, //reset module
 
     output reg [7:0] SEG, //to display 'Error' or 'Done'
-    output reg [3:0] AN 
+    output reg [3:0] AN, 
+    output reg [0:0] s_axis_phase_input,
+    output reg [7:0] s_axis_phase_tdata_input,
+    output reg [31:0] Y_output
 );
 
     //Add the reset  
@@ -71,30 +74,43 @@ module top(
     reg [7:0] dina=0; //We're not putting data in, so we can leave this unassigned
     wire [7:0] douta; //Port A data output (to read) //TODO width of BRAM_A
     reg reset = 1'b1;
-       	
-	//instantiate BRAM_A
-	//currently it has 256 samples stored    
+    	
+	//instantiate BRAM_A    
     blk_mem_gen_0 new_BRAM (
     CLK100MHZ,    // input wire clka
     ena,      // input wire ena
     wea,      // input wire [0 : 0] wea
     addra,  // input wire [7 : 0] addra
-    dina,    // input wire [7 : 0] dina
-    douta  // output wire [7 : 0] douta
+    dina,    // input wire [10 : 0] dina
+    douta  // output wire [10 : 0] douta
     );
-    	
-	//TODO instantiate CORDIC Core
+    
+    //TODO instantiate BRAM_B	
 	
+//cordic core
+cordic_0 sine_instance(
+   CLK100MHZ,                  // input wire aclk
+   s_axis_phase_input,         // input wire s_axis_phase_tvalid
+   s_axis_phase_tdata_input,   // input wire [7 : 0] s_axis_phase_tdata
+   m_axis_dout_tvalid_output,  // output wire m_axis_dout_tvalid
+   m_axis_dout_tdata_output    // output wire [31 : 0] m_axis_dout_tdata
+);
+
 	//checksum variables
 	reg [31:0] sum=0;
-	reg [7:0] X_input; //8 bit input X
-	reg [31:0] Y_output; //32 bit output Y 
-	
+	reg [7:0] X_input; //8 bit input
 	//The main logic
 	always @(posedge CLK100MHZ) begin
+	    
 	   AN<= SegmentDrivers;
 	   SEG<=SevenSegment;
+	   
 	   X_input <=douta; //read input byte from BRAM_A
+	   
+	   s_axis_phase_input <= 1'b1; // input wire s_axis_phase_tvalid
+	   s_axis_phase_tdata_input <= X_input; //input byte to sine module  
+	
+	   Y_output <= m_axis_dout_tdata_output;
 	   
 	   if(Start_event)begin
 	   //TODO start logic
