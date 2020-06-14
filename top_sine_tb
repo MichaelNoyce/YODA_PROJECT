@@ -67,9 +67,9 @@ X_input_tb[10] = 8'b00001010;
 for (i=0; i<11; i=i+1) begin
     s_axis_phase_tvalid_input <= 1'b1;
     X_input <= X_input_tb[i];
-    #100;
+    #10;
     s_axis_phase_tvalid_input <= 1'b0;
-    #100;    
+    #10;    
 end
 
 end
@@ -79,4 +79,3 @@ always begin
 end
 
 
-endmodule

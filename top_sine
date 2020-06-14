@@ -88,6 +88,8 @@ module top(
     //TODO instantiate BRAM_B	
 //cordic core
 reg [7:0]  s_axis_phase_tdata_input;
+wire m_axis_dout_tvalid_output;
+wire [32:0] m_axis_dout_tdata_output;
 
 cordic_0 sine_instance(
    CLK100MHZ,                  // input wire aclk
