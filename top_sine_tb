@@ -1,0 +1,82 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 06/13/2020 02:07:53 PM
+// Design Name: 
+// Module Name: top_sim
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
+
+
+module top_tb();
+
+reg clk;
+reg BTNA;
+reg BTNB;
+reg [7:0] X_input_tb[10:0];
+reg [7:0] X_input;
+wire [7:0] SEG;
+wire [3:0] AN;
+reg [0:0] s_axis_phase_tvalid_input;
+wire [31:0] Y_output;
+//counter variable
+integer i;
+
+top top_sim(
+    .CLK100MHZ(clk),
+    .BTNA(BTNA),
+    .BTNB(BTNB),
+    .SEG(SEG),
+    .AN(AN),
+    .s_axis_phase_tvalid_input(s_axis_phase_tvalid_input),
+    .X_input(X_input),
+    .Y_output(Y_output),
+    .sum(sum)
+    );
+
+initial begin
+
+//Reset test
+clk=0;
+
+//declare input array
+X_input_tb[0] = 8'b00000000;
+X_input_tb[1] = 8'b00000001;
+X_input_tb[2] = 8'b00000010;
+X_input_tb[3] = 8'b00000011;
+X_input_tb[4] = 8'b00000100;
+X_input_tb[5] = 8'b00000101;
+X_input_tb[6] = 8'b00000110;
+X_input_tb[7] = 8'b00000111;
+X_input_tb[8] = 8'b00001000;
+X_input_tb[9] = 8'b00001001;
+X_input_tb[10] = 8'b00001010;
+
+for (i=0; i<11; i=i+1) begin
+    s_axis_phase_tvalid_input <= 1'b1;
+    X_input <= X_input_tb[i];
+    #100;
+    s_axis_phase_tvalid_input <= 1'b0;
+    #100;    
+end
+
+end
+
+always begin
+    #10 clk = ~clk; //100x10^6 Hz clock
+end
+
+
+endmodule

@@ -1,0 +1,126 @@
+`timescale 1ns / 1ps
+
+module top(
+
+    input CLK100MHZ,
+    input BTNA, //start checksum
+    input BTNB, //reset module
+    input s_axis_phase_tvalid_input,
+    input wire [7:0] X_input, //input to the module 
+    output reg [7:0] SEG, //to display 'Error' or 'Done'
+    output reg [3:0] AN,     
+    output reg [31:0] Y_output,
+    output reg [31:0] sum
+);
+
+    //Add the reset  
+    wire reset_in;
+    Delay_Reset resetTop(CLK100MHZ, BTNA, reset_in);
+
+    //Add and debounce the button
+    wire StartButton; //Debounced button output
+	
+    // Instantiate Debounce modules here
+    Debounce StartButton_Debounce(CLK100MHZ, reset_in, BTNA, StartButton);
+    
+    //Edge Detector 
+	reg Old_StartButton;
+	wire rising_edge_Start;
+		
+	assign rising_edge_Start = StartButton & !Old_StartButton; 
+	
+	always @(posedge CLK100MHZ)begin
+        if (reset_in)begin
+            Old_StartButton <= 1'b0;
+        end else begin
+            Old_StartButton <= StartButton;
+        end
+    end
+      
+    //Counters 
+    reg Start_event;
+   
+    always @(posedge CLK100MHZ)begin
+        if (reset_in)begin
+        Start_event <= 1'b0;
+        end
+        else if(rising_edge_Start) begin
+            Start_event <= 1'b1;
+            end
+        else Start_event <= 1'b0;
+    end 
+    
+    // registers for storing output message 
+    reg [3:0]letter1=4'd0;
+	reg [3:0]letter2=4'd0;
+	reg [3:0]letter3=4'd0;
+	reg [3:0]letter4=4'd0;
+    
+    //Initialize seven segment
+	wire [3:0] SegmentDrivers;
+	wire [7:0] SevenSegment;
+	
+	//TODO get the correct letters displayed in BCD_Decoder
+	SS_Driver SS_Driver1(
+		CLK100MHZ, reset_in, letter1, letter2, letter3, letter4,
+		SegmentDrivers, SevenSegment
+	);
+	
+	//BRAM_A contains the input .coe file
+	//Memory A IO
+    reg ena = 1; //Port A clock enable (enables read, write and reset)
+    reg wea = 0; //Port A write disabled
+    reg [7:0] addra=0; //Port A address //TODO depth of BRAM_A 
+    reg [7:0] dina=0; //We're not putting data in, so we can leave this unassigned
+    wire [7:0] douta; //Port A data output (to read) //TODO width of BRAM_A
+    reg reset = 1'b0;
+    	
+	//instantiate BRAM_A    
+    blk_mem_gen_0 new_BRAM (
+    CLK100MHZ,    // input wire clka
+    ena,      // input wire ena
+    wea,      // input wire [0 : 0] wea
+    addra,  // input wire [7 : 0] addra
+    dina,    // input wire [10 : 0] dina
+    douta  // output wire [10 : 0] douta
+    );
+    
+    //TODO instantiate BRAM_B	
+//cordic core
+reg [7:0]  s_axis_phase_tdata_input;
+
+cordic_0 sine_instance(
+   CLK100MHZ,                  // input wire aclk
+   s_axis_phase_tvalid_input,         // input wire s_axis_phase_tvalid
+   s_axis_phase_tdata_input,   // input wire [7 : 0] s_axis_phase_tdata
+   m_axis_dout_tvalid_output,  // output wire m_axis_dout_tvalid
+   m_axis_dout_tdata_output    // output wire [31 : 0] m_axis_dout_tdata
+);
+	//The main logic
+	always @(posedge CLK100MHZ) begin
+	    
+	   AN<= SegmentDrivers;
+	   SEG<=SevenSegment;
+	   
+  
+       if(s_axis_phase_tvalid_input) begin
+	       s_axis_phase_tdata_input <= X_input; //input byte to sine module  
+	   end 
+
+	   if (m_axis_dout_tvalid_output) begin
+	       Y_output <= m_axis_dout_tdata_output;
+	   end 
+	   
+	   if(Start_event)begin
+	   //TODO start logic
+	   end
+	   
+       if (reset_in)begin
+       //TODO reset logic
+       sum<=0;
+       end else begin
+       sum <= Y_output + sum;
+       end
+
+    end
+endmodule
