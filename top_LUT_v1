@@ -159,7 +159,7 @@ reg [7:0] BRAM_result;
 	   addra_B <= temp;
 	   temp_out1 <= douta_B;
 	   temp_out2 <= temp_out1*const100;
-	   temp_out3 <= temp_out2[31:0];
+	   Y_output <= temp_out2[31:0];
 	   
 	   
 	   //set the display values
