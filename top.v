@@ -15,26 +15,26 @@ module top(
     input s_axis_phase_tvalid_input,
     input wire [7:0] X_input, //input to the module
     output reg [31:0] Y_output,
-    output reg [31:0] sum,
+    //output reg [31:0] sum,
     
     //display
     output reg [7:0] SEG, //to display 'Error' or 'Done'
-    output reg [6:0] AN, 
+    output reg [6:0] AN 
     
     //BRAM
-    output reg [7:0] BRAM_result
+    //output reg [7:0] BRAM_result
 );
 
     //BUTTONS
     //Add the reset  
     //wire reset_in;
-    Delay_Reset resetTop(CLK100MHZ, BTNA, reset_in);
+    //Delay_Reset resetTop(CLK100MHZ, BTNA, reset_in);
 
     //Add and debounce the button
     wire StartButton; //Debounced button output
 	
     // Instantiate Debounce modules here
-    Debounce StartButton_Debounce(CLK100MHZ, reset_in, BTNA, StartButton);
+    //Debounce StartButton_Debounce(CLK100MHZ, reset_in, BTNA, StartButton);
     
     //Edge Detector 
 	reg Old_StartButton;
@@ -105,7 +105,7 @@ module top(
 	//cordic core
     reg [7:0]  s_axis_phase_tdata_input;
     wire m_axis_dout_tvalid_output;
-    wire [32:0] m_axis_dout_tdata_output;
+    wire [63:0] m_axis_dout_tdata_output;
 
     cordic_0 sine_instance(
     CLK100MHZ,                  // input wire aclk
@@ -115,6 +115,9 @@ module top(
     m_axis_dout_tdata_output    // output wire [31 : 0] m_axis_dout_tdata
     );
     
+    reg [7:0] BRAM_result;
+    reg [31:0] sum;
+    
 	//The main logic
 	always @(posedge CLK100MHZ) begin
 	   AN<= SegmentDrivers;
@@ -123,11 +126,11 @@ module top(
 	   
 	   //Sine core 
 	   if(s_axis_phase_tvalid_input) begin
-	       s_axis_phase_tdata_input <= X_input; //input byte to sine module  
+	       s_axis_phase_tdata_input<= X_input; //input byte to sine module  
 	   end 
 
 	   if (m_axis_dout_tvalid_output) begin
-	       Y_output <= m_axis_dout_tdata_output;
+	       Y_output <= m_axis_dout_tdata_output[63:32];
 	   end 
 	   
 	   //Reset button
