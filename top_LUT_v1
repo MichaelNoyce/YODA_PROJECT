@@ -1,0 +1,190 @@
+`timescale 1ns / 1ps
+
+module top(
+
+    input CLK100MHZ,
+    
+    //IO
+    input BTNA, //start checksum
+    input BTNB, //reset module
+    input reset_in, //reset module
+    input success,
+    input error,
+    
+    //display
+    output reg [7:0] SEG, //to display 'Error' or 'Done'
+    output reg [6:0] AN 
+    //BRAM
+    //output reg [7:0] BRAM_result
+);
+
+reg [7:0] BRAM_result;
+    //BUTTONS
+    //Add the reset  
+    //wire reset_in;
+    Delay_Reset resetTop(CLK100MHZ, BTNA, reset_in);
+
+    //Add and debounce the button
+    wire StartButton; //Debounced button output
+	
+    // Instantiate Debounce modules here
+    Debounce StartButton_Debounce(CLK100MHZ, reset_in, BTNA, StartButton);
+    
+    //Edge Detector 
+	reg Old_StartButton;
+	wire rising_edge_Start;
+		
+	assign rising_edge_Start = StartButton & !Old_StartButton; 
+	
+	always @(posedge CLK100MHZ)begin
+        if (reset_in)begin
+            Old_StartButton <= 1'b0;
+        end else begin
+            Old_StartButton <= StartButton;
+        end
+    end
+      
+    //Counters 
+    reg Start_event;
+   
+    always @(posedge CLK100MHZ)begin
+        if (reset_in)begin
+        Start_event <= 1'b0;
+        end
+        else if(rising_edge_Start) begin
+            Start_event <= 1'b1;
+            end
+        else Start_event <= 1'b0;
+    end 
+    
+    // registers for storing output message 
+    reg [2:0]letter1=4'd0; //S //E
+	reg [2:0]letter2=4'd0; //U //R
+	reg [2:0]letter3=4'd0; //C //R
+	reg [2:0]letter4=4'd0; //C //O
+	reg [2:0]letter5=4'd0; //E //R
+	reg [2:0]letter6=4'd0; //S
+	reg [2:0]letter7=4'd0; //S
+    
+    //Initialize seven segment
+	wire [7:0] SegmentDrivers;
+	wire [6:0] SevenSegment;
+	
+	//TODO get the correct letters displayed in BCD_Decoder
+	SS_Driver SS_Driver1(
+		CLK100MHZ, reset_in, letter1, letter2, letter3, letter4, letter5, letter6,letter7,
+		SegmentDrivers, SevenSegment
+	);
+	
+	//BRAM_A contains the input .coe file
+	//Memory A IO
+    reg ena = 1; //Port A clock enable (enables read, write and reset)
+    reg wea = 0; //Port A write disabled
+    reg [3:0] addra=0; //Port A address 
+    reg [7:0] dina=0; //We're not putting data in, so we can leave this unassigned
+    wire [7:0] douta; //Port A data output (to read)
+    reg reset = 1'b1;
+       	
+	//instantiate BRAM_A
+	//currently it has 256 samples stored    
+    blk_mem_gen_0 new_BRAM (
+    CLK100MHZ,    // input wire clka
+    ena_A,      // input wire ena
+    wea_A,      // input wire [0 : 0] wea
+    addra_A,  // input wire [7 : 0] addra
+    dina_A,    // input wire [7 : 0] dina
+    douta_A  // output wire [7 : 0] douta
+    );
+    	
+    	
+    //BRAM_B contains the input .coe file
+	//Memory A IO
+    reg ena_B = 1; //Port A clock enable (enables read, write and reset)
+    reg wea_B = 0; //Port A write disabled
+    reg [3:0] addra_B=0; //Port A address 
+    reg [7:0] dina_B=0; //We're not putting data in, so we can leave this unassigned
+    wire [10:0] douta_B; //Port A data output (to read)
+    reg reset = 1'b1;
+       	
+	//instantiate BRAM_B
+	//currently it has 256 samples stored    
+    blk_mem_gen_1 new2_BRAM (
+    CLK100MHZ_B,    // input wire clka
+    ena_B,      // input wire ena
+    wea_B,      // input wire [0 : 0] wea
+    addra_B,  // input wire [7 : 0] addra
+    dina_B,    // input wire [7 : 0] dina
+    douta_B  // output wire [7 : 0] douta
+    );
+    	
+	//Logic for LUT
+	reg [7:0] Y_output;
+	reg [0:0] Reset;
+	reg [31:0] sum;
+	reg [10:0] BA; //BRAM_A value
+	reg [10:0] BB; //BRAM_B value
+	reg [21:0] FPMult; //Fixed point multiplication product holder
+	reg [10:0] temp;
+	reg [31:0] temp_out1;
+	reg [31:0] temp_out2;
+	reg [31:0] temp_out3;
+	reg [10:0] pi_over32 = 10'b00_00011001; //pi/32 approx = 3.140625
+	reg [10:0] const100 = 32'b0000000001100100_0000000000000000;
+	//The main logic
+	always @(posedge CLK100MHZ) begin
+	   AN<= SegmentDrivers;
+	   SEG<=SevenSegment;
+	   BRAM_result <=douta_A; //read input byte from BRAM_A
+	   
+	   //Reset button
+	   if (reset_in)begin
+           sum<=0;
+       end else begin
+           sum <= Y_output + sum;
+       end
+        
+        
+	   //read from BRAM
+	   if (addra<9)begin
+	       addra=addra+1;
+	   end else begin
+	       addra<=0;
+	   end
+	   
+	   
+	   //Calculations 
+	   BA <= douta;
+	   FPMult <= BA*pi_over32;
+	   temp <= FPMult[19:16];
+	   addra_B <= temp;
+	   temp_out1 <= douta_B;
+	   temp_out2 <= temp_out1*const100;
+	   temp_out3 <= temp_out2[31:0];
+	   
+	   
+	   //set the display values
+	   if(success)begin
+	       letter1<=3;//S
+	       letter2<=4;//U
+	       letter3<=5;//C
+	       letter4<=5;//C
+	       letter5<=0;//E
+	       letter6<=3;//S
+	       letter7<=3;//S
+	   end 
+	   
+	   if(error)begin
+	       letter1<=0;//E
+	       letter2<=1;//R
+	       letter3<=1;//R
+	       letter4<=2;//O
+	       letter5<=1;//R
+	       letter6<=6;//off
+	       letter7<=6;//off
+	       
+	   
+	   end
+       
+       
+    end
+endmodule
