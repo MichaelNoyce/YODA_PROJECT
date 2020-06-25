@@ -13,9 +13,10 @@ module top(
     
     //display
     output reg [7:0] SEG, //to display 'Error' or 'Done'
-    output reg [6:0] AN 
-    //BRAM
-    //output reg [7:0] BRAM_result
+    output reg [6:0] AN,
+        
+    //Output from module 
+    output reg [7:0] Y_output
 );
 
 reg [7:0] BRAM_result;
@@ -72,7 +73,7 @@ reg [7:0] BRAM_result;
 	
 	//TODO get the correct letters displayed in BCD_Decoder
 	SS_Driver SS_Driver1(
-		CLK100MHZ, reset_in, letter1, letter2, letter3, letter4, letter5, letter6,letter7,
+		CLK100MHZ, reset_in, letter1, letter2, letter3, letter4,letter5,letter6,letter7,
 		SegmentDrivers, SevenSegment
 	);
 	
@@ -83,7 +84,7 @@ reg [7:0] BRAM_result;
     reg [3:0] addra=0; //Port A address 
     reg [7:0] dina=0; //We're not putting data in, so we can leave this unassigned
     wire [7:0] douta; //Port A data output (to read)
-    reg reset = 1'b1;
+    //reg reset = 1'b1;
        	
 	//instantiate BRAM_A
 	//currently it has 256 samples stored    
@@ -104,8 +105,7 @@ reg [7:0] BRAM_result;
     reg [3:0] addra_B=0; //Port A address 
     reg [7:0] dina_B=0; //We're not putting data in, so we can leave this unassigned
     wire [10:0] douta_B; //Port A data output (to read)
-    reg reset = 1'b1;
-       	
+
 	//instantiate BRAM_B
 	//currently it has 256 samples stored    
     blk_mem_gen_1 new2_BRAM (
@@ -118,12 +118,13 @@ reg [7:0] BRAM_result;
     );
     	
 	//Logic for LUT
-	reg [7:0] Y_output;
 	reg [0:0] Reset;
-	reg [31:0] sum;
 	reg [10:0] BA; //BRAM_A value
 	reg [10:0] BB; //BRAM_B value
 	reg [21:0] FPMult; //Fixed point multiplication product holder
+	reg [31:0] sum; //rolling sum 
+	
+	//Temporary values for fixed point multiplication 
 	reg [10:0] temp;
 	reg [31:0] temp_out1;
 	reg [31:0] temp_out2;
@@ -140,7 +141,7 @@ reg [7:0] BRAM_result;
 	   if (reset_in)begin
            sum<=0;
        end else begin
-           sum <= Y_output + sum;
+           sum <= temp_out3 + sum;
        end
         
         
@@ -148,7 +149,7 @@ reg [7:0] BRAM_result;
 	   if (addra<9)begin
 	       addra=addra+1;
 	   end else begin
-	       addra<=0;
+	       Y_output <= sum;
 	   end
 	   
 	   
@@ -159,7 +160,7 @@ reg [7:0] BRAM_result;
 	   addra_B <= temp;
 	   temp_out1 <= douta_B;
 	   temp_out2 <= temp_out1*const100;
-	   Y_output <= temp_out2[31:0];
+	   temp_out3 <= temp_out2[31:0];
 	   
 	   
 	   //set the display values
