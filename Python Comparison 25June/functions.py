@@ -27,20 +27,25 @@ def funct(x):
 def convert_to_32b(y):
     
     integer = int(y) # Integer part of number only
-    decimals = float(y-int(y)) # Decimal part of number only
+    decimals = abs(float(y-int(y))) # Decimal part of number only
     
     # Empty string declerations
     bin_int = "" # binary of integer part only 
     bin_dec = "" # binary of decimal part only
-    bin_32b = "" # binary of integer and decimal parts combind
+    bin_32b = "" # binary of integer and decimal parts combined
     
-    bin_int = bin(integer)[2:] # [2:0] removes the "0b" from the string
+    bin_int = bin(integer) # [2:] # [2:0] removes the "0b" from the string
+    if (bin_int[0:1] == "-"):
+        bin_int = bin_int[3:]
+    else:
+        bin_int = bin_int[2:]
+    
     if (len(bin_int)<16):
         zeroes = (16 - len(bin_int)) * "0"
         bin_int = zeroes + bin_int # will fill up the spaces infront of the binary integer value with 0s to get 16 bits
     
     for k in range(16): # Way to calculate decimals in binary
-        
+         
         decimals = decimals *2
         
         if (int(decimals >= 1)):
@@ -49,7 +54,10 @@ def convert_to_32b(y):
         else:
             bin_dec += "0"
      
-    bin_32b = bin_int + "." + bin_dec # Concatination of binary integer and binary decimal parts
+    if (integer <1):
+        bin_32b = "-" + bin_int + "." + bin_dec # Concatination of negative binary integer and binary decimal parts
+    else:
+        bin_32b = bin_int + "." + bin_dec # Concatination of positive binary integer and binary decimal parts
     
     return bin_32b
             

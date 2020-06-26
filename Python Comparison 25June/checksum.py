@@ -5,16 +5,17 @@ from tictocgenerator import tic, toc
 import time
 
 # Declare variables
-x = functions.make_input(100000) # Create input array of n bytes
+x = functions.make_input(1000) # Create input array of n bytes
 checksum = 0
 # wrap_around = 0 # To see if wrap around occurs
  
 tic() 
 for i in range(len(x)):
     x[i] = functions.funct(x[i]) # Array of input bytes in integer form after sine function
-print(x)
+toc()
+    
 for j in range(len(x)):
-    if (checksum < 2**32): # Overflow condition
+    if (checksum < 2**16): # Overflow condition
         checksum += x[j]
     else:
         # wrap_around += 1
@@ -24,4 +25,4 @@ for j in range(len(x)):
 print(checksum) # Base 10 value of checksum
 print (functions.convert_to_32b(checksum)) # Base 2 value of checksum in 32bit format
 # print(wrap_around) # to see if wrap around had occured
-toc()
+#toc()
