@@ -8,21 +8,21 @@ module top(
     input BTNA, //start checksum
     input BTNB, //reset module
     input reset_in, //reset module
+    //input done,
     input success,
     input error,
     
     //CORDIC core
     input s_axis_phase_tvalid_input,
-    input wire [7:0] X_input, //input to the module
+    output reg [7:0] X_input, //input to the module
     output reg [31:0] Y_output,
-    //output reg [31:0] sum,
-    
+    output reg [31:0] sum_out,
     //display
     output reg [7:0] SEG, //to display 'Error' or 'Done'
-    output reg [6:0] AN 
+    output reg [6:0] AN, 
     
     //BRAM
-    //output reg [7:0] BRAM_result
+    output reg [7:0] BRAM_result
 );
 
     //BUTTONS
@@ -115,39 +115,78 @@ module top(
     m_axis_dout_tdata_output    // output wire [31 : 0] m_axis_dout_tdata
     );
     
-    reg [7:0] BRAM_result;
+    //reg [7:0] BRAM_result;
     reg [31:0] sum;
+    //reg [7:0] X_input;
+    //reg [1:0] done;
+    //reg[1:0] yes;
     
 	//The main logic
 	always @(posedge CLK100MHZ) begin
 	   AN<= SegmentDrivers;
 	   SEG<=SevenSegment;
 	   BRAM_result <=douta; //read input byte from BRAM_A
+	   //sum <= Y_output + sum;
+	   //sum<=temp;
+	   sum_out<=sum;
+	  
 	   
-	   //Sine core 
-	   if(s_axis_phase_tvalid_input) begin
-	       s_axis_phase_tdata_input<= X_input; //input byte to sine module  
-	   end 
-
-	   if (m_axis_dout_tvalid_output) begin
-	       Y_output <= m_axis_dout_tdata_output[63:32];
-	   end 
-	   
-	   //Reset button
-	   if (reset_in)begin
-           sum<=0;
-       end else begin
-           sum <= Y_output + sum;
-       end
-        
-        
-	   //read from BRAM
-	   if (addra<9)begin
-	       addra=addra+1;
+	   if(reset_in)begin
+	       sum<=0;
+	       //done<=0;
 	   end else begin
-	       addra<=0;
+	       X_input <=douta;
+	       s_axis_phase_tdata_input<= douta;
+	        Y_output <= m_axis_dout_tdata_output[63:32];
+	        sum=sum+Y_output;
+	        if (addra<9)begin
+	           addra=addra+1;
+	        end else begin
+	           
+	           addra<=0;
+	           sum<=0;
+	        end 
 	   end
 	   
+	   /*if(done) begin
+	       sum_out<=sum;
+	   end else begin*/
+	       /*if (done)begin
+	           Y_output<=0;
+	       end else begin*/
+	           //Sine core 
+	           /*if(s_axis_phase_tvalid_input) begin
+	               X_input <=douta;
+	               s_axis_phase_tdata_input<= douta; //input byte to sine module 
+	             if (addra<9)begin
+	                   addra=addra+1;
+	               end else begin
+	                   sum<=0;
+	                   addra<=0;
+	               end  
+	               
+           
+	           end
+	           
+	     end */
+	     
+	     /*if (m_axis_dout_tvalid_output) begin
+	               yes<=1;
+	               Y_output <= m_axis_dout_tdata_output[63:32];
+	                if (addra<9)begin
+	                   addra=addra+1;
+	               end else begin
+	                   done<=1;
+	                   addra<=0;
+	               end 
+	               //sum=sum+Y_output;
+	     end  else begin
+	       yes<=0;
+	     end      */
+	   
+	   
+	           
+		   
 	   //set the display values
 	   if(success)begin
 	       letter1<=3;//S
@@ -166,11 +205,10 @@ module top(
 	       letter4<=2;//O
 	       letter5<=1;//R
 	       letter6<=6;//off
-	       letter7<=6;//off
-	       
-	   
+	       letter7<=6;//off	   
 	   end
+
        
        
-    end
+end
 endmodule
